@@ -22,7 +22,8 @@ SystemC 3.0.2 (Includes TLM) -> Core SystemC Language and Examples (.zip)  2025-
 解压缩，项目目录会有CMakeLists.txt  
 建立一个SystemC安装文件夹，比如C:/systemc/3.0.2-mingw  
 
-### 进入CMakeLists.txt的文件夹，执行如下命令
+### 编译SystemC Lib 
+进入CMakeLists.txt的文件夹，执行如下步骤  
 1 配置Configue: CMake 本质上不是编译器，它是“生成构建脚本的工具”。这一步通常不会真正把库编出来，它主要是“准备好怎么编”。  
 ```
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:/systemc/3.0.2-mingw
