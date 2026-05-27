@@ -44,5 +44,5 @@ C:\systemc\3.0.2-mingw\include
 C:\systemc\3.0.2-mingw\lib(里面有 libsystemc.a)  
 C:\systemc\3.0.2-mingw\share\doc  
 ```
-
+实际项目中，配置CMakelists.txt使其找到libsystemc.a就可以了。  
 
