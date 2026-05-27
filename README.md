@@ -28,7 +28,8 @@ SystemC 3.0.2 (Includes TLM) -> Core SystemC Language and Examples (.zip)  2025-
 ```
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:/systemc/3.0.2-mingw
 ```
-2 构建Build:会调用第 1 步生成的构建系统去实际编译代码。编译完成后，产物一般会留在 build/ 里面(还没“安装”到最终目录)。如果编译器不支持posix这一步会出问题，需要调整使用支持posix的编译器。  
+2 构建Build:会调用第 1 步生成的构建系统去实际编译代码。编译完成后，产物一般会留在 build/ 里面(还没“安装”到最终目录)。  
+如果编译器不支持posix，这一步会出问题，需要调整使用支持posix的编译器。  
 ```
 cmake --build build -j
 ```
