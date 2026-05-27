@@ -15,7 +15,7 @@ https://github.com/gpuwangge/SystemCforMinGW/blob/main/Tutorial.md
 
 ### Download SystemC
 https://www.accellera.org/downloads/standards/systemc  
-下载这个:
+下载这个(或对应的最新版本):
 ```
 SystemC 3.0.2 (Includes TLM) -> Core SystemC Language and Examples (.zip)  2025-10-31  
 ```
