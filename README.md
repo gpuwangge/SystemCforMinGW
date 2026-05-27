@@ -1,4 +1,4 @@
-# Build Instruction
+## Build Instruction
 ```cmake
 mkdir build
 cd build
@@ -6,14 +6,14 @@ cmake -G "MinGW Makefiles" ..
 make -j
 ```
 
-# Tutorial
+## Tutorial
 https://github.com/gpuwangge/SystemCforMinGW/blob/main/Tutorial.md  
 
-# Install Instruction
+## Install Instruction
 平台:windows  
 编译器:gcc (minGW)  
 
-## Download SystemC
+### Download SystemC
 https://www.accellera.org/downloads/standards/systemc  
 下载这个:
 ```
@@ -22,7 +22,7 @@ SystemC 3.0.2 (Includes TLM) -> Core SystemC Language and Examples (.zip)  2025-
 解压缩，项目目录会有CMakeLists.txt  
 建立一个SystemC安装文件夹，比如C:/systemc/3.0.2-mingw  
 
-## 进入CMakeLists.txt的文件夹，执行如下命令
+### 进入CMakeLists.txt的文件夹，执行如下命令
 配置Configue: CMake 本质上不是编译器，它是“生成构建脚本的工具”。这一步通常不会真正把库编出来，它主要是“准备好怎么编”。  
 ```
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:/systemc/3.0.2-mingw
