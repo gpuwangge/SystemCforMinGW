@@ -3,9 +3,10 @@
 #include <systemc.h>
 
 using namespace sc_core;
-    SC_MODULE(Hello) {
-        SC_CTOR(Hello) {
-            SC_THREAD(run);
+
+SC_MODULE(Hello) {
+    SC_CTOR(Hello) {
+        SC_THREAD(run);
     }
 
     void run() {
