@@ -328,6 +328,28 @@ c.in(fifo);           // in 是 sc_fifo_in<int>
 ```
 你在写偏 RTL 的模块（寄存器、FSM、valid/ready 接口）：优先 sc_signal  
 你想做模块间数据流、缓冲、解耦（生产快/消费慢）：用 sc_fifo + sc_fifo_in/out  
+
+c_fifo 在 满写 和 空读 时的行为（分阻塞/非阻塞两套 API）：
+1) FIFO 满时写（Full on write）  
+阻塞写：write(x)  
+行为：如果 FIFO 已满，write(x) 会阻塞等待，直到 FIFO 出现空位才返回。  
+结果：不丢数据，但调用该 write() 的线程/进程会卡住，后续代码不执行，直到有空位。  
+非阻塞写：nb_write(x)  
+行为：如果 FIFO 已满，立即返回 false（不等待）。  
+结果：数据没有写入。是否丢数据取决于你怎么处理失败（重试/缓存/直接忽略）。  
+2) FIFO 空时读（Empty on read）  
+阻塞读：read() 或 read(x)  
+行为：如果 FIFO 为空，read() 会阻塞等待，直到 FIFO 有数据才返回（并把数据出队）。  
+结果：不会读到“假数据”，但读线程会卡住直到有数据。  
+非阻塞读：nb_read(x)  
+行为：如果 FIFO 为空，立即返回 false（不等待），x 不会被更新为有效新数据。  
+结果：本次没读到数据；你可以选择下次再读或做其它事。  
+3) 额外两个常用查询（不阻塞）  
+num_available()：当前 FIFO 里有多少元素可读（已用数量）  
+num_free()：当前 FIFO 里还有多少空位可写  
+记忆法：  
+write/read：会等（blocking）  
+nb_write/nb_read：不等，返回成功/失败（non-blocking）  
 ## 11 wait
 在 SystemC 里，wait(...) 的作用是让当前这个进程挂起（阻塞），直到指定的事件/时间发生，发生后再从 wait 这一行的下一句继续执行。它相当于在写“时序逻辑”的感觉：代码不会一口气跑完，而是跟着仿真时间一步步走。
 结合这段代码来看：  
