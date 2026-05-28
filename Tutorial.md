@@ -346,7 +346,8 @@ c_fifo 在 满写 和 空读 时的行为（分阻塞/非阻塞两套 API）：
 结果：本次没读到数据；你可以选择下次再读或做其它事。  
 3) 额外两个常用查询（不阻塞）  
 num_available()：当前 FIFO 里有多少元素可读（已用数量）  
-num_free()：当前 FIFO 里还有多少空位可写  
+num_free()：当前 FIFO 里还有多少空位可写
+
 记忆法：  
 write/read：会等（blocking）  
 nb_write/nb_read：不等，返回成功/失败（non-blocking）  
