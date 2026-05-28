@@ -104,62 +104,59 @@ VCD/FSDB 等波形 trace 的信号命名(通常会带层级名)
 sc_find_object("h")
 ```
 这种按名字查对象
-## 6 sc_main 是什么？
-
+## 6 sc_main 是什么
 sc_main 是 SystemC 仿真程序的约定入口函数(simulation entry point)。它的标准签名是：
-
+```
 int sc_main(int argc, char* argv[]);
-
-你在 sc_main 里通常做三件事：
-
-实例化模块(SC_MODULE 的对象)
-
-连接接口/信号、设置 trace、配置参数等
-
-调用 sc_start(...) 启动仿真
-
-由 SystemC 库提供胶水 main()，去调用用户的 sc_main()
-
-SystemC 库中(或某个附加对象文件中)提供真正的 main()
-
-main() 会初始化 SystemC 运行环境，然后调用你的 sc_main()
-
-你也可以自己写一个 main()，在里面调用 sc_main()
-
+```
+你在 sc_main 里通常做三件事：  
+实例化模块(SC_MODULE 的对象)  
+连接接口/信号、设置 trace、配置参数等  
+调用 sc_start(...) 启动仿真  
+由 SystemC 库提供胶水 main()，去调用用户的 sc_main()  
+SystemC 库中(或某个附加对象文件中)提供真正的 main()  
+main() 会初始化 SystemC 运行环境，然后调用你的 sc_main()  
+你也可以自己写一个 main()，在里面调用 sc_main()  
 ## 7 sc_signal和sc_in/sc_out
-
-sc_signal<T>：是 SystemC 里最常用的“信号/连线”(channel)，用来保存一个值并在值变化时通知事件(触发敏感进程)。你可以把它理解成硬件里的 wire/reg(在 SystemC 抽象下的信号线)。
-
-sc_in<T>：则是模块的输入端口(port)。端口本身不存值，它只是一个“插口”，要绑定到某个真正承载数据的东西(最常见就是 sc_signal<T>)。
-
-sc_out<T>：跟以上类似，只不过是输出端口。
-
-port：指的就是 SystemC 模块里的端口对象，也就是那些 sc_in<> / sc_out<> / sc_inout<> 成员。
-
-关系
-
-sc_signal<T>:数据在哪里“存/传播”，像电线，可被读写
-
-sc_in<T>:模块从哪里“读进来”，像针脚
-
-两者通过 bind/连接(port(signal)) 连起来
-
-举例：
-
+```
+sc_signal<T>
+```
+是 SystemC 里最常用的“信号/连线”(channel)，用来保存一个值并在值变化时通知事件(触发敏感进程)。你可以把它理解成硬件里的 wire/reg(在 SystemC 抽象下的信号线)。  
+```
+sc_in<T>
+```
+则是模块的输入端口(port)。端口本身不存值，它只是一个“插口”，要绑定到某个真正承载数据的东西(最常见就是 sc_signal<T>)。  
+```
+sc_out<T>
+```
+跟以上类似，只不过是输出端口。
+```
+port
+```
+指的就是 SystemC 模块里的端口对象，也就是那些 sc_in<> / sc_out<> / sc_inout<> 成员。  
+关系  
+sc_signal<T>:数据在哪里“存/传播”，像电线，可被读写  
+sc_in<T>:模块从哪里“读进来”，像针脚  
+两者通过 bind/连接(port(signal)) 连起来  
+举例：  
+```
 SC_MODULE(consumer) {
-
-sc_in<int> a; // 这就是 port(端口对象)
-
-...
-
+  sc_in<int> a; // 这就是 port(端口对象)
+  ...
 };
-
-sc_signal<int> s; // 定义一个 int 类型的 signal
-
-consumer u("u"); // 定义一个 consumer 类型的对象，对象名字叫 u，再给一个层级结构的名字 "u"。consumer 里面定义了一个 port，名字叫 a。
-
-u.a(s); // 由以上定义可知，这一步就是把 u 里面的 a port(sc_in<int>) bind 到 s 上。
-
+```
+```
+sc_signal<int> s;
+```
+定义一个 int 类型的 signal
+```
+consumer u("u");
+```
+定义一个 consumer 类型的对象，对象名字叫 u，再给一个层级结构的名字 "u"。consumer 里面定义了一个 port，名字叫 a。  
+```
+u.a(s);
+```
+由以上定义可知，这一步就是把 u 里面的 a port(sc_in<int>) bind 到 s 上。  
 ## 8 SC_THREAD和SC_CTHREAD的区别
 
 SC_THREAD 和 SC_CTHREAD 都是用来在 SystemC 里创建“线程进程”(会按时间推进，可以 wait())的，但定位不同：
