@@ -103,7 +103,7 @@ VCD/FSDB 等波形 trace 的信号命名(通常会带层级名)
 ```
 sc_find_object("h")
 ```
-这种按名字查对象
+这种按名字查对象。
 ## 6 sc_main 是什么
 sc_main 是 SystemC 仿真程序的约定入口函数(simulation entry point)。它的标准签名是：
 ```
@@ -158,133 +158,77 @@ u.a(s);
 ```
 由以上定义可知，这一步就是把 u 里面的 a port(sc_in<int>) bind 到 s 上。  
 ## 8 SC_THREAD和SC_CTHREAD的区别
-
-SC_THREAD 和 SC_CTHREAD 都是用来在 SystemC 里创建“线程进程”(会按时间推进，可以 wait())的，但定位不同：
-
-SC_THREAD:通用线程(最常用、最灵活)
-
-SC_CTHREAD:时钟驱动线程(专用于同步时序逻辑，更“硬件化”，更偏 RTL 风格/综合友好)
-
-SC_CTHREAD 里多出来的这个 C 通常理解为 Clocked(时钟驱动的) / Cycle(按周期推进的)。
-
-也就是说
-
-SC_THREAD:普通线程进程(general thread)
-
-SC_CTHREAD:clocked thread / cycle thread —— 专用来建模“同步时序逻辑”的线程
-
-必须指定时钟沿:SC_CTHREAD(proc, clk.pos());
-
-wait() 通常表示“等一个时钟周期/下一拍”
-
-更接近 RTL 写法(类似 always_ff @(posedge clk))
-
-它不是 C++ 的 “C”，而是 SystemC 里为了强调“这个线程是时钟同步的”而加的前缀。
-
-a.触发/调度方式不同
-
-SC_THREAD
-
-用敏感列表或内部 wait() 控制何时运行
-
-常见写法：
-
+SC_THREAD 和 SC_CTHREAD 都是用来在 SystemC 里创建“线程进程”(会按时间推进，可以 wait())的，但定位不同：  
+SC_THREAD:通用线程(最常用、最灵活)  
+SC_CTHREAD:时钟驱动线程(专用于同步时序逻辑，更“硬件化”，更偏 RTL 风格/综合友好)  
+SC_CTHREAD 里多出来的这个 C 通常理解为 Clocked(时钟驱动的) / Cycle(按周期推进的)。  
+也就是说  
+SC_THREAD:普通线程进程(general thread)  
+SC_CTHREAD:clocked thread / cycle thread —— 专用来建模“同步时序逻辑”的线程  
+必须指定时钟沿:SC_CTHREAD(proc, clk.pos());  
+wait() 通常表示“等一个时钟周期/下一拍”  
+更接近 RTL 写法(类似 always_ff @(posedge clk))  
+它不是 C++ 的 “C”，而是 SystemC 里为了强调“这个线程是时钟同步的”而加的前缀。  
+a.触发/调度方式不同  
+SC_THREAD  
+用敏感列表或内部 wait() 控制何时运行  
+常见写法：  
+```
 SC_THREAD(proc);
-
 sensitive << clk.pos(); // 或 sensitive << sig1 << sig2 ...
-
-也可以完全不写 sensitive，然后在线程里 wait(event) / wait(time)。
-
+```
+也可以完全不写 sensitive，然后在线程里 wait(event) / wait(time)。  
+```
 SC_CTHREAD
-
-必须指定一个时钟沿作为驱动：
-
+```
+必须指定一个时钟沿作为驱动：  
+```
 SC_CTHREAD(proc, clk.pos());
-
-线程每次 wait() 默认就等 一个时钟周期(下一次指定边沿)
-
+```
+线程每次 wait() 默认就等 一个时钟周期(下一次指定边沿)  
 b.reset 支持方式不同
-
-SC_THREAD
-
-reset 要你自己写逻辑(例如检测 rst 信号并处理)，或用 async_reset_signal_is/reset_signal_is(SystemC 2.3+ 支持对 thread 也做 reset 约束，但风格上还是更自由)。
-
-典型写法是线程里显式处理 reset。
-
-SC_CTHREAD
-
-有配套的 reset 声明方式，风格接近硬件寄存器复位：
-
+SC_THREAD  
+reset 要你自己写逻辑(例如检测 rst 信号并处理)，或用 async_reset_signal_is/reset_signal_is(SystemC 2.3+ 支持对 thread 也做 reset 约束，但风格上还是更自由)。  
+典型写法是线程里显式处理 reset。  
+SC_CTHREAD  
+有配套的 reset 声明方式，风格接近硬件寄存器复位：  
+```
 SC_CTHREAD(proc, clk.pos());
-
 async_reset_signal_is(rst_n, false); // 或 reset_signal_is(...)
-
-reset 触发时会把线程“拉回”到开头(从 reset 状态重新开始执行)，更符合时序电路建模。
-
-
-c.wait() 语义与使用习惯不同
-
-SC_THREAD
-
-wait() 可以：
-
-wait();:等敏感列表事件(如果有)
-
-wait(10, SC_NS);:等时间
-
-wait(ev);:等事件
-
-wait(ev1 | ev2);:等多个事件之一
-
-适合协议、软件式状态机、复杂握手、任意事件驱动。
-
-SC_CTHREAD
-
-主要用 wait(); 表示 等一个时钟(下一拍)
-
-不鼓励(通常也不适合)用“任意事件 wait”，它的核心就是“每拍推进一次”的同步流程。
-
-SC_CTHREAD 更接近 Verilog 的 always_ff @(posedge clk) + reset，更适合写可综合的时序逻辑(取决于你的综合工具是否支持 SystemC 综合)。
-
-SC_THREAD 偏通用仿真建模，写起来像并发程序，不一定综合友好。
-
-你在写 同步时序电路(寄存器、流水线、同步 FSM):优先 SC_CTHREAD
-
-你在写 复杂时序/协议/测试平台(testbench)、需要等待任意事件/时间:用 SC_THREAD
-
-## 9 sc_signal
-
+```
+reset 触发时会把线程“拉回”到开头(从 reset 状态重新开始执行)，更符合时序电路建模。  
+c.wait() 语义与使用习惯不同  
+SC_THREAD  
+wait() 可以：  
+wait();:等敏感列表事件(如果有)  
+wait(10, SC_NS);:等时间  
+wait(ev);:等事件  
+wait(ev1 | ev2);:等多个事件之一  
+适合协议、软件式状态机、复杂握手、任意事件驱动。  
+SC_CTHREAD  
+主要用 wait(); 表示 等一个时钟(下一拍)  
+不鼓励(通常也不适合)用“任意事件 wait”，它的核心就是“每拍推进一次”的同步流程。  
+SC_CTHREAD 更接近 Verilog 的 always_ff @(posedge clk) + reset，更适合写可综合的时序逻辑(取决于你的综合工具是否支持 SystemC 综合)。  
+SC_THREAD 偏通用仿真建模，写起来像并发程序，不一定综合友好。  
+你在写 同步时序电路(寄存器、流水线、同步 FSM):优先 SC_CTHREAD  
+你在写 复杂时序/协议/测试平台(testbench)、需要等待任意事件/时间:用 SC_THREAD  
+## 9 sc_clock
 sc_clock 在用法上很像信号(你可以把它连到 sc_in<bool> 上、也能放进 sensitive << clk.pos())，但严格说它不是 sc_signal。
-
-更准确地讲：
-
-sc_signal<T>:通用“信号通道”(channel)，值由某个写者写入。
-
-sc_clock:一种专用通道/原语通道(primitive channel)，内部自己按照你设定的周期自动翻转，生成时钟波形。
-
-不同点(关键差异)
-
-a.谁来驱动
-
-sc_signal<bool>:需要你自己(通过 sc_out 或 write())去驱动翻转
-
-sc_clock:SystemC 内核自动驱动，按周期产生 0/1
-
-b.用途
-
-sc_signal:传递任意数据/控制信号
-
-sc_clock:专内建模时钟(period、duty cycle、起始相位等)
-
-c.类型与接口
-
-sc_clock 的值类型是 bool(本质是一个布尔时钟源)
-
-它实现的是时钟信号需要的事件(posedge/negedge)
-
-sc_clock 和 sc_signal 一样都是 channel，模块要用到它通常也是通过 port 绑定(bind)进去的。
-
-最常见:把 sc_clock 绑定到模块的 sc_in<bool> clk
+更准确地讲：  
+sc_signal<T>:通用“信号通道”(channel)，值由某个写者写入。  
+sc_clock:一种专用通道/原语通道(primitive channel)，内部自己按照你设定的周期自动翻转，生成时钟波形。  
+不同点(关键差异)  
+a.谁来驱动  
+sc_signal<bool>:需要你自己(通过 sc_out 或 write())去驱动翻转  
+sc_clock:SystemC 内核自动驱动，按周期产生 0/1  
+b.用途  
+sc_signal:传递任意数据/控制信号  
+sc_clock:专内建模时钟(period、duty cycle、起始相位等)  
+c.类型与接口  
+sc_clock 的值类型是 bool(本质是一个布尔时钟源)  
+它实现的是时钟信号需要的事件(posedge/negedge)  
+sc_clock 和 sc_signal 一样都是 channel，模块要用到它通常也是通过 port 绑定(bind)进去的。  
+最常见:把 sc_clock 绑定到模块的 sc_in<bool> clk  
 
 
 
