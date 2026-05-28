@@ -40,43 +40,39 @@ SC_MODULE(Hello) {
 更短、更符合 SystemC 社区的常见写法  
 不容易写错构造函数签名（SystemC 对模块构造签名有约定）  
 ## 3 注册一个线程进程(process)
-
+```
 SC_CTOR(Hello) { SC_THREAD(run); }
-
-SC_THREAD(run); 告诉 SystemC 内核：在仿真开始后，把成员函数 run() 当作一个“线程进程”来执行。
-
-SystemC 常见进程类型：
-
-SC_METHOD：不允许在函数里 wait()，一次触发跑至结束（适合组合逻辑/事件触发回调）。
-
-SC_THREAD：允许 wait()，可写成“会暂停/恢复”的行为（适合时序流程、协议、测试激励）。
-
-这里用 SC_THREAD 是因为 run() 里面要 wait(10, SC_NS)。
-
-
-
+```
+```
+SC_THREAD(run);
+```
+告诉 SystemC 内核：在仿真开始后，把成员函数 run() 当作一个“线程进程”来执行。  
+SystemC 常见进程类型：  
+SC_METHOD：不允许在函数里 wait()，一次触发跑至结束（适合组合逻辑/事件触发回调）。  
+SC_THREAD：允许 wait()，可写成“会暂停/恢复”的行为（适合时序流程、协议、测试激励）。  
+这里用 SC_THREAD 是因为 run() 里面要 wait(10, SC_NS)。  
 ## 4 线程函数 run():打印时间、等待、再打印、停止
-
+```
 void run() {
-
-std::cout << "Hello SystemC @ " << sc_time_stamp() << "\n";
-
-wait(10, SC_NS);
-
-std::cout << "After 10ns @ " << sc_time_stamp() << "\n";
-
-sc_stop();
-
+  std::cout << "Hello SystemC @ " << sc_time_stamp() << "\n";
+  wait(10, SC_NS);
+  std::cout << "After 10ns @ " << sc_time_stamp() << "\n";
+  sc_stop();
 }
-
-sc_time_stamp():返回“当前仿真时间”，一开始通常是 0(例如 0 s)。
-
-wait(10, SC_NS);:让这个线程进程暂停 10 纳秒。注意这里不是让 Windows 睡眠 10ns，而是让仿真时间推进 10ns。
-
-再次打印，此时 sc_time_stamp() 应该是 10 ns。
-
-sc_stop();:请求停止仿真(结束 sc_start())。
-
+```
+```
+sc_time_stamp()
+```
+返回“当前仿真时间”，一开始通常是 0(例如 0 s)。  
+```
+wait(10, SC_NS);
+```
+让这个线程进程暂停 10 纳秒。注意这里不是让 Windows 睡眠 10ns，而是让仿真时间推进 10ns。  
+再次打印，此时 sc_time_stamp() 应该是 10 ns。  
+```
+sc_stop();
+```
+请求停止仿真(结束 sc_start())。
 ## 5 sc_main:SystemC 程序入口
 
 int sc_main(int, char*[]) {
