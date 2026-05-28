@@ -1,60 +1,44 @@
 # Tutorial
 ## 1 头文件与命名空间
-
+```
 #include <systemc>
-
 using namespace sc_core;
-
+```
 ## 2 定义一个 SystemC 模块（硬件模块的“类”）
-
+```
 SC_MODULE(Hello) {
-
 SC_CTOR(Hello) { SC_THREAD(run); }
-
-...
-
+  ...
 };
-
+```
+```
 SC_MODULE(Hello)
-
+```
 这是一个宏，等价于定义一个继承自 sc_module 的 C++ 类，名字叫 Hello。
-
 在 SystemC 里，模块 (module) 就是建模的基本单元，类似 Verilog 里的 module。
-
 这行会展开成类似：
-
+```
 struct Hello : sc_core::sc_module { ... };
-
+```
+```
 SC_CTOR(Hello)
-
-这是模块构造函数的宏，用于注册进程、初始化内部成员等。模块实例化时会执行这里的代码。
-
-名字由来：
-
-ctor -> constructor(构造函数)
-
-dtor -> destructor(析构函数)
-
-你也可以不用 SC_CTOR，直接手写：
-
+```
+这是模块构造函数的宏，用于注册进程、初始化内部成员等。模块实例化时会执行这里的代码。  
+名字由来：  
+ctor -> constructor(构造函数)  
+dtor -> destructor(析构函数)  
+你也可以不用 SC_CTOR，直接手写：  
+```
 SC_MODULE(Hello) {
-
-Hello(sc_core::sc_module_name name) : sc_core::sc_module(name) {
-
-SC_THREAD(run);
-
-}
-
-void run() {}
-
+  Hello(sc_core::sc_module_name name) : sc_core::sc_module(name) {
+    SC_THREAD(run);
+  }
+  void run() {}
 };
-
-两种都可以。SC_CTOR 的优势是：
-
-更短、更符合 SystemC 社区的常见写法
-
-不容易写错构造函数签名（SystemC 对模块构造签名有约定）
-
+```
+两种都可以。SC_CTOR 的优势是：  
+更短、更符合 SystemC 社区的常见写法  
+不容易写错构造函数签名（SystemC 对模块构造签名有约定）  
 ## 3 注册一个线程进程(process)
 
 SC_CTOR(Hello) { SC_THREAD(run); }
