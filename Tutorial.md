@@ -74,42 +74,36 @@ sc_stop();
 ```
 请求停止仿真(结束 sc_start())。
 ## 5 sc_main:SystemC 程序入口
-
+```
 int sc_main(int, char*[]) {
-
 Hello h("h");
-
-sc_start();
-
-return 0;
-
+  sc_start();
+  return 0;
 }
-
-SystemC 的入口函数叫 sc_main(不是标准 C++ 的 main)。SystemC 库会提供 glue code 来从 main 进入 sc_main(或由链接方式决定)。
-
-Hello h("h");:实例化一个模块，名字叫 "h"。这个名字在 SystemC 的对象层次结构里很重要，用于层级命名/调试/trace。
-
-sc_start();:启动仿真内核。它会调度并运行你注册的进程(这里就是 run())。
-
-直到 sc_stop() 被调用或仿真结束条件达成，sc_start() 才会返回。
-
+```
+SystemC 的入口函数叫 sc_main(不是标准 C++ 的 main)。SystemC 库会提供 glue code 来从 main 进入 sc_main(或由链接方式决定)。  
+```
 Hello h("h");
-
-左边的 h(不带引号)是 C++ 变量名:在 C++ 代码里你用它来引用这个对象。
-
-右边的 "h"(带引号)是传给 SystemC 的 实例名(instance name)，用于 SystemC 内部建立“对象层级/命名空间”。
-
-SystemC 会把这个实例登记为一个对象，名字叫 "h"。后续很多机制都用这个名字，例如：
-
-打印层级名称(h、top.h 这种)
-
-报错/警告信息里定位是哪一个模块实例
-
-VCD/FSDB 等波形 trace 的信号命名(通常会带层级名)
-
-sc_find_object("h") 这种按名字查对象
-
-
+```
+实例化一个模块，名字叫 "h"。这个名字在 SystemC 的对象层次结构里很重要，用于层级命名/调试/trace。  
+```
+sc_start();
+```
+启动仿真内核。它会调度并运行你注册的进程(这里就是 run())。  
+直到 sc_stop() 被调用或仿真结束条件达成，sc_start() 才会返回。  
+```
+Hello h("h");
+```
+左边的 h(不带引号)是 C++ 变量名:在 C++ 代码里你用它来引用这个对象。  
+右边的 "h"(带引号)是传给 SystemC 的 实例名(instance name)，用于 SystemC 内部建立“对象层级/命名空间”。  
+SystemC 会把这个实例登记为一个对象，名字叫 "h"。后续很多机制都用这个名字，例如：  
+打印层级名称(h、top.h 这种)  
+报错/警告信息里定位是哪一个模块实例  
+VCD/FSDB 等波形 trace 的信号命名(通常会带层级名)  
+```
+sc_find_object("h")
+```
+这种按名字查对象
 ## 6 sc_main 是什么？
 
 sc_main 是 SystemC 仿真程序的约定入口函数(simulation entry point)。它的标准签名是：
