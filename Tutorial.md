@@ -229,13 +229,41 @@ sc_clock 的值类型是 bool(本质是一个布尔时钟源)
 它实现的是时钟信号需要的事件(posedge/negedge)  
 sc_clock 和 sc_signal 一样都是 channel，模块要用到它通常也是通过 port 绑定(bind)进去的。  
 最常见:把 sc_clock 绑定到模块的 sc_in<bool> clk  
+## 10 sc_fifo
+sc_signal<T> 和 sc_fifo_out<T> 的核心区别是：一个是“硬件线网/寄存器式信号（单值）”，一个是“带队列语义的通道接口（多值、有缓存）”。  
+数据语义:前者只有一个当前值（被覆盖）；后者是队列，可以存多个元素（有深度）。  
+写入行为	write(x)： 前者把值更新为 x（旧值被覆盖）；后者write(x) / nb_write(x) 把元素入队（FIFO 满会阻塞或失败）。  
+读取行为	read()： 前者读当前值（不会“消耗”）；后者read() / nb_read(x) 出队（FIFO 空会阻塞或失败）。  
+同步/时序：前者常用来描述 RTL 信号，更新在 delta cycle 生效；常配合时钟进程；后者更像“消息/事务传输”，天然有生产者-消费者语义。  
+连接关系：前者通常 1 个 driver（单写者）+ 多读者（可多个观察者）；FIFO 通常 1 写者 + 1 读者（典型用法；也可扩展但要小心仲裁）。  
+适用场景：前者寄存器输出、组合信号、握手信号（valid/ready）、状态等；后者用于流式数据、任务队列、模块解耦、速率不匹配的缓冲。  
+直观例子  
+sc_signal：只保留“最后一次写”的值  
+```
+sc_signal<int> s;
+s.write(1);
+s.write(2);
+// 你再 read，只会得到 2，1 被覆盖掉了
+```
+sc_fifo：会把每次写入都排队保存  
+```
+sc_fifo<int> f(4);
+f.write(1);
+f.write(2);
+// 读两次会依次得到 1、2（先进先出）
+```
+sc_fifo_out<T> 不是 FIFO 本体，它是一个端口类型（port），表示“这个模块有一个 FIFO 输出口”。它必须连接到某个 sc_fifo<T>（或兼容 sc_fifo 接口的 channel）  
+```
+sc_fifo<int> fifo(4);
 
+Producer p("p");
+p.out(fifo);          // out 是 sc_fifo_out<int>
 
-
-
-
-
-
+Consumer c("c");
+c.in(fifo);           // in 是 sc_fifo_in<int>
+```
+你在写偏 RTL 的模块（寄存器、FSM、valid/ready 接口）：优先 sc_signal  
+你想做模块间数据流、缓冲、解耦（生产快/消费慢）：用 sc_fifo + sc_fifo_in/out  
 
 
 
