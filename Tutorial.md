@@ -51,6 +51,35 @@ SystemC 常见进程类型：
 SC_METHOD：不允许在函数里 wait()，一次触发跑至结束（适合组合逻辑/事件触发回调）。  
 SC_THREAD：允许 wait()，可写成“会暂停/恢复”的行为（适合时序流程、协议、测试激励）。  
 这里用 SC_THREAD 是因为 run() 里面要 wait(10, SC_NS)。  
+
+systemc在实现的时候也是在一个进程里建立两个线程吗？比如：
+```
+SC_THREAD(stim);
+SC_THREAD(monitor_fifo_level);
+```
+答案：不是。SystemC 里的 SC_THREAD 不是操作系统线程，实现上通常也不是“一个进程里开两个 pthread/std::thread”。它们是由 SystemC 内核管理的仿真进程（simulation process / coroutine），在同一个 OS 线程（甚至同一个进程）里通过调度器“轮流执行”。  
+更准确地说：  
+1) SC_THREAD/SC_METHOD 属于“仿真进程”，由内核调度  
+你写两个 SC_THREAD(stim); SC_THREAD(monitor);  
+内核会创建两个仿真进程对象  
+每个仿真进程运行到 wait(...) 时主动让出控制权  
+调度器在事件（如 clk.posedge_event()）触发时，把对应进程恢复执行  
+这是一种协作式调度（cooperative）：进程不 wait，就会一直跑、阻塞整个仿真。  
+2) 默认情况下：单 OS 线程、单进程、时间片不并行  
+通常 SystemC 仿真是：  
+一个操作系统线程跑 SystemC kernel 的主循环  
+所有 SC_THREAD/SC_METHOD 都在这个 OS 线程里被“交错执行”   
+所以它们是“仿真并发”，不是 CPU 并行  
+（当然也在同一个 OS 进程里。）  
+3) SC_METHOD 和 SC_THREAD 的实现机制区别  
+SC_METHOD：每次触发就从函数开头执行到结尾，不能 wait，不需要保存执行上下文  
+SC_THREAD：可以 wait，所以内核需要保存/恢复上下文（通常用协程/纤程一类机制实现）  
+但两者都不是 OS 级线程。  
+4) 什么时候才会用到多 OS 线程？  
+标准 SystemC 语义本身不要求多线程。少数场景会引入多线程，例如：  
+仿真器/厂商内核做并行加速（不改变语义的优化）  
+你自己在 SystemC 外围用 std::thread 跑别的工作（日志、socket、GUI），但这要非常小心线程安全（SystemC 内核通常不是随便多线程调用的）  
+结论：在一个模块里写两个 SC_THREAD，实现上通常仍是同一个 OS 线程里由 SystemC 内核调度的两个“仿真线程/协程”，不是两个真正的系统线程。  
 ## 4 线程函数 run():打印时间、等待、再打印、停止
 ```
 void run() {
