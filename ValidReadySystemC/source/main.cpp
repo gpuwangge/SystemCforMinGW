@@ -24,6 +24,19 @@ Consumer 会故意制造 backpressure：
 这就是经典 valid/ready 握手
 */
 
+/*
+Backpressure：概念/目的——下游忙不过来时，能让上游降速或暂停，避免溢出、丢数据。
+ready/valid：具体做法/接口协议——用两根握手信号把 backpressure 明确表达出来。
+ready/valid 怎么表达 backpressure?
+以典型语义为例（很多总线/流接口都类似）：
+上游给 valid=1：表示“我这拍有数据要发，数据稳定有效”
+下游给 ready=1：表示“我这拍有能力接收数据”
+真正发生传输的条件是：valid && ready
+当下游忙时，它把 ready 拉低：
+ready=0 就是 backpressure 的体现：告诉上游“别送/我不收”
+上游必须保持 valid 和数据稳定，直到 ready 重新变 1 才完成传输（不丢数据）
+*/
+
 // ------------------ Producer ------------------
 SC_MODULE(Producer) {
     sc_in<bool> clk;
