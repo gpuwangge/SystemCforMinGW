@@ -385,3 +385,26 @@ wait(clk.posedge_event());
 类似写法还有：wait(clk.negedge_event()) 等待下降沿。  
 在while loop里面写wait相当于做一个节拍器。  
 
+```
+wait(3, SC_NS);
+```
+是 SystemC 里的等待语句，意思是：让当前正在运行的进程（process）暂停 3 个纳秒（ns）  
+仿真时间会向前推进 3ns，然后该进程在 3ns 后被重新唤醒继续执行  
+等价理解：“延时 3ns”。  
+常见使用场景  
+通常出现在 SC_THREAD / SC_CTHREAD 这类线程进程中，用来建模时序行为，例如：  
+```
+SC_THREAD(my_thread) {
+  // 做一些事
+  wait(3, SC_NS); // 3ns 后再继续
+  // 持续或后续事情
+}
+```
+补充说明
+SC_NS 是 SystemC 预定义的时间单位常量（纳秒）。类似的还有 SC_PS、SC_US、SC_MS、SC_SEC。  
+wait() 也可以写成基于 sc_time 的形式：wait(sc_time(3, SC_NS));  
+
+
+
+
+
