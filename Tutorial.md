@@ -81,6 +81,26 @@ SC_THREAD：可以 wait，所以内核需要保存/恢复上下文（通常用�
 你自己在 SystemC 外围用 std::thread 跑别的工作（日志、socket、GUI），但这要非常小心线程安全（SystemC 内核通常不是随便多线程调用的）
 
 结论：在一个模块里写两个 SC_THREAD，实现上通常仍是同一个 OS 线程里由 SystemC 内核调度的两个“仿真线程/协程”，不是两个真正的系统线程。  
+
+SystemC里的进程和线程  
+1) 进程（process）  
+SystemC 里的 process 是仿真内核调度的“可执行实体”，类似软件里的协程/任务，由内核在合适的时间点或事件发生时唤醒运行。  
+SystemC 进程主要有三类：  
+⁠SC_METHOD⁠：无阻塞（传统上不能 ⁠wait()⁠），一次被触发就从头执行到尾，然后结束，等待下次触发。  
+⁠SC_THREAD⁠：可阻塞（可以 ⁠wait()⁠），执行流会在 ⁠wait()⁠ 处暂停，条件满足后从暂停点继续。  
+⁠SC_CTHREAD⁠：时钟化线程（可阻塞），通常用于同步时序建模，和某个 ⁠clock/reset⁠ 强绑定（用法上更受限制）。  
+要点： SystemC 内核调度的是 process；⁠wait()⁠、敏感表（sensitivity）、事件触发，都是在 process 层面定义的。  
+2) 线程（thread）  
+“线程”这个词有两种常见含义，容易混：  
+A. 操作系统线程（OS thread）  
+由操作系统调度（如 pthread、std::thread）。可以在多核上并行执行，调度与 SystemC 无关。  
+B. SystemC 里的“线程进程”（thread process）  
+很多人把 ⁠SC_THREAD⁠/⁠SC_CTHREAD⁠ 叫“线程”，但它们本质仍是 SystemC process 的一种类型（thread-like）。它们通常 不等于 OS 线程，一般情况下都是在单个 OS 线程里由 SystemC 内核按仿真时间顺序“轮流运行”（协作式挂起/恢复）。  
+3) 一句话对比  
+Process (SystemC)：仿真内核调度单位（⁠SC_METHOD⁠/⁠SC_THREAD⁠/⁠SC_CTHREAD⁠）。  
+Thread (SystemC 口语)：特指可 ⁠wait()⁠ 的此类 process（⁠SC_THREAD⁠/⁠SC_CTHREAD⁠）。  
+Thread (OS)：操作系统调度单位，可能并行；与 SystemC 的 process 不是一回事（除非你自己把 SystemC 跑在多 OS 线程里，但那是更高级/额外的架构）。  
+
 ## 4 线程函数 run():打印时间、等待、再打印、停止
 ```
 void run() {
