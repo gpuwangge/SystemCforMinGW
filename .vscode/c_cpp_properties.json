@@ -4,6 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/SimpleTLM/include",
                 "C:/systemc/3.0.2-mingw/include"
             ],
             "defines": [
