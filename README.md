@@ -7,7 +7,8 @@ make -j
 ```
 
 ## Tutorial
-https://github.com/gpuwangge/SystemCforMinGW/blob/main/Tutorial.md  
+[SystemC Tutorial](https://github.com/gpuwangge/SystemCforMinGW/blob/main/Docs/SystemCTutorial.md )    
+[TLM Tutorial](https://github.com/gpuwangge/SystemCforMinGW/blob/main/Docs/TLMTutorial.md )    
 
 ## Install Instruction
 平台:windows  
