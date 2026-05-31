@@ -54,6 +54,8 @@ SC_MODULE(Producer)
             else if (en.read()){
                 cnt++;
                 uint32_t data = cnt;
+                //在 TLM 术语里，payload 和 transaction 指的几乎是同一个东西
+                //tlm_generic_payload 这个名字里虽然有 payload，但它代表整个事务对象，所以大家都习惯叫它 trans
                 tlm::tlm_generic_payload trans;
                 sc_time delay = SC_ZERO_TIME;
 

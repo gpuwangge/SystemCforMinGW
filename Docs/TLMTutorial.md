@@ -49,3 +49,70 @@ sc_in/sc_out = 电线（电线上只有 1 或 0，等时钟敲一下才变）
 sc_fifo = 排队（先来的先处理）  
 特点：中间有个小箱子先存着，不用等对方马上处理，适合流水线工作。  
 
+## 3 TLM Payload
+Payload（通用载荷） 是 TLM-2.0 中标准化的事务对象，用来在 Initiator 和 Target 之间传递读写请求 。  
+简单说：Payload = TLM 里的「快递单」，上面写满了这次「送货」的所有信息 。  
+```
+tlm::tlm_generic_payload trans;
+```
+这个事务对象包含以下核心字段 ：  
+
+| 字段              | 类型                  | 说明           | 示例                                   |
+| --------------- | ------------------- | ------------ | ------------------------------------ |
+| command         | tlm_command         | 读还是写         | TLM_READ_COMMAND / TLM_WRITE_COMMAND |
+| address         | unsigned long long  | 目标地址         | 0x1000                               |
+| data_ptr        | unsigned char*      | 数据指针         | 指向数据缓冲区                              |
+| data_length     | unsigned int        | 数据长度（字节）     | 4（4 字节）                              |
+| byte_enable     | unsigned int*       | 字节使能（哪些字节有效） | 可选                                   |
+| response_status | tlm_response_status | 响应状态         | TLM_OK_RESPONSE / TLM_ERROR_RESPONSE |
+| streaming_width | unsigned int        | 流宽度（连续传输）    | 可选                                   |
+| DMI hint        | -                   | 直接内存访问提示     | 可选                                   |
+| extensions      | -                   | 用户自定义扩展      | 可添加额外信息 verificationacademy+1        |
+
+tlm_generic_payload = TLM 里的「标准化快递单」，封装了地址、命令、数据、响应，Initiator 和 Target 用它通信 。  
+
+## 4 TLM Payload扩展
+Payload 扩展是什么？  
+1. 通俗理解  
+想象你要寄快递：  
+
+| 快递单字段    | Payload 扩展类比                |
+| -------- | --------------------------- |
+| 地址（必填）   | trans.set_address(0x1000)   |
+| 商品（必填）   | trans.set_data_ptr(data)    |
+| 额外备注（可选） | extension->cache_hit = true |
+
+Payload 扩展 = 在标准快递单上额外加一栏「备注」，用来存放你自己的信息 。  
+
+2. 为什么要用扩展？  
+TLM 标准字段太少，不够用  
+tlm_generic_payload 只包含最基本的字段：  
+
+| 标准字段            | 用途  | 局限             |
+| --------------- | --- | -------------- |
+| command         | 读/写 | 不知道是 AXI 哪个 ID |
+| address         | 地址  | 不知道是哪个 CPU 来的  |
+| data_ptr        | 数据  | 不知道缓存是否命中      |
+| response_status | 响应  | 不知道性能开销        |
+
+但现实系统中还有很多信息需要传递：  
+
+| 场景       | 需要额外什么信息                            |
+| -------- | ----------------------------------- |
+| AXI 总线   | axi_id、burst_type、lock、protection   |
+| 缓存系统     | cache_hit、cache_level、prefetch_hint |
+| 多 CPU 系统 | cpu_id、thread_id、exception_level    |
+| 安全系统     | is_secure、privileged_mode           |
+| 性能分析     | timestamp、latency、cycle_count       |
+
+总结
+
+| 维度    | 回答                                     |
+| ----- | -------------------------------------- |
+| 是什么   | Payload 扩展 = 在标准事务对象上额外加一栏「自定义字段」      |
+| 有什么用  | 传递标准字段装不下的信息（AXI ID、缓存信息、CPU ID、性能数据等） |
+| 什么时候用 | 当标准字段不够用时，就加扩展 gitcode.csdn            |
+
+标准 Payload = 快递单上的「地址 + 商品 + 收件人」（必填）  
+Payload 扩展 = 快递单上的「备注栏」（可选，比如「冰箱里放冷冻」「不要放门口」）  
+
