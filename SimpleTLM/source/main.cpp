@@ -39,102 +39,71 @@ SC_MODULE(Producer)
     sc_in<bool> rst_n;
     sc_in<bool> en;
 
+    //Producer 这个模块身上装了一个“出货口”，它负责把事务发出去；对面如果是 Consumer 或 Target，通常会有对应的 simple_target_socket 来接收。
     tlm_utils::simple_initiator_socket<Producer> socket;
 
     int cnt;
 
-    void run()
-    {
+    void run(){
         cnt = 0;
-
         wait(clk.posedge_event());
-
-        while (true)
-        {
+        while (true){
             wait(clk.posedge_event());
-
-            if (!rst_n.read())
-            {
-                cnt = 0;
-            }
-            else if (en.read())
-            {
+            if (!rst_n.read()) cnt = 0;
+            
+            else if (en.read()){
                 cnt++;
-
                 uint32_t data = cnt;
-
                 tlm::tlm_generic_payload trans;
-
                 sc_time delay = SC_ZERO_TIME;
 
                 trans.set_command(tlm::TLM_WRITE_COMMAND);
-
                 trans.set_address(0x1000);
-
-                trans.set_data_ptr(
-                    reinterpret_cast<unsigned char*>(&data));
-
+                trans.set_data_ptr(reinterpret_cast<unsigned char*>(&data));
                 trans.set_data_length(sizeof(data));
 
-                std::cout
-                    << sc_time_stamp()
-                    << " Producer send transaction: "
-                    << data
-                    << std::endl;
-
+                std::cout << sc_time_stamp() << " Producer send transaction: " << data << std::endl;
+                /*
+                调用后阻塞：当前线程会一直等待，直到目标模块完成该事务并返回响应
+                时序注解：delay 表示事务在 sc_time_stamp() + delay 时刻生效；目标可以修改 delay 累加延迟
+                一次完成：在 loosely-timed 风格中，每个 b_transport 调用对应一个完整的事务（从发出到收到响应）
+                */
                 socket->b_transport(trans, delay);
 
                 wait(delay);
 
-                std::cout
-                    << sc_time_stamp()
-                    << " Producer transaction done"
-                    << std::endl;
+                std::cout << sc_time_stamp() << " Producer transaction done"<< std::endl;
             }
         }
     }
 
-    SC_CTOR(Producer)
-    {
-        SC_THREAD(run);
-    }
+    SC_CTOR(Producer) { SC_THREAD(run); }
+    
 };
 
-SC_MODULE(Consumer)
-{
+SC_MODULE(Consumer){
+    //这行代码和之前的 simple_initiator_socket<Producer> 正好是一对：一个发、一个收，完成 TLM 通信 。
     tlm_utils::simple_target_socket<Consumer> socket;
 
-    SC_CTOR(Consumer)
-    {
-        socket.register_b_transport(
-            this,
-            &Consumer::b_transport);
+    SC_CTOR(Consumer){
+        //在 target socket 上注册一个 b_transport 回调函数，当 initiator 通过 socket 调用 b_transport() 时，SystemC 会自动调用你指定的这个成员函数来处理事务 。
+        socket.register_b_transport(this, &Consumer::b_transport);
     }
 
-    void b_transport(
-        tlm::tlm_generic_payload& trans,
-        sc_time& delay)
-    {
-        uint32_t data =
-            *reinterpret_cast<uint32_t*>(
-                trans.get_data_ptr());
+    void b_transport(tlm::tlm_generic_payload& trans, sc_time& delay){
+        uint32_t data = *reinterpret_cast<uint32_t*>(trans.get_data_ptr());
 
-        std::cout
-            << sc_time_stamp()
-            << " Consumer got transaction: "
-            << data
-            << std::endl;
+        std::cout << sc_time_stamp() << " Consumer got transaction: " << data << std::endl;
 
         // 模拟处理时间
         delay += sc_time(30, SC_NS);
 
-        trans.set_response_status(
-            tlm::TLM_OK_RESPONSE);
+        //在事务处理完成后，设置响应状态为「成功」，告诉 initiator 这个事务已经正常完成。
+        trans.set_response_status(tlm::TLM_OK_RESPONSE);
     }
 };
 
-SC_MODULE(Top)
-{
+SC_MODULE(Top){
     sc_clock clk{"clk", 10, SC_NS};
 
     sc_signal<bool> rst_n{"rst_n"};
@@ -143,8 +112,7 @@ SC_MODULE(Top)
     Producer prod{"prod"};
     Consumer cons{"cons"};
 
-    void stim()
-    {
+    void stim(){
         rst_n = false;
         en = false;
 
@@ -152,23 +120,17 @@ SC_MODULE(Top)
         wait(clk.posedge_event());
 
         rst_n = true;
-
         en = true;
 
-        for (int i = 0; i < 10; i++)
-        {
-            wait(clk.posedge_event());
-        }
-
+        for (int i = 0; i < 10; i++) wait(clk.posedge_event());
+        
         en = false;
-
         wait(100, SC_NS);
 
         sc_stop();
     }
 
-    SC_CTOR(Top)
-    {
+    SC_CTOR(Top){
         prod.clk(clk);
         prod.rst_n(rst_n);
         prod.en(en);
@@ -179,8 +141,7 @@ SC_MODULE(Top)
     }
 };
 
-int sc_main(int argc, char* argv[])
-{
+int sc_main(int argc, char* argv[]){
     Top top("top");
     sc_start();
 
