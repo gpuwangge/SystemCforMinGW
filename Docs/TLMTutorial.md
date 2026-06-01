@@ -49,6 +49,22 @@ sc_in/sc_out = 电线（电线上只有 1 或 0，等时钟敲一下才变）
 sc_fifo = 排队（先来的先处理）  
 特点：中间有个小箱子先存着，不用等对方马上处理，适合流水线工作。  
 
+速度大概排序：
+| 速度     | 机制                         |
+| ------ | -------------------------- |
+| 最快     | TLM socket / b_transport   |
+| 次快     | tlm_fifo                   |
+| 再慢     | sc_fifo                    |
+| 最慢（通常） | sc_in / sc_out + sc_signal |
+
+为什么 TLM 最快: TLM 传的是事务，不是一拍一拍的信号变化，所以一次调用就能描述“读/写一次地址”的完整动作。它通常只需要处理一次函数调用和少量延迟注解，不会像信号级模型那样频繁触发很多事件。  
+为什么 tlm_fifo 比 sc_fifo 更适合 TLM: tlm_fifo 是专门为 TLM 事务缓冲设计的，和 TLM socket 的数据类型更匹配，通常不用再把事务“拆成普通对象再塞进通用 FIFO”。因为它更贴合事务流，少一些适配层，所以在 TLM 场景里通常比 sc_fifo 更顺手、更高效。  
+为什么 sc_fifo 比 TLM 慢：sc_fifo 处理的是普通数据对象，每次读写都要经过 SystemC 的 FIFO 同步机制，涉及阻塞/唤醒和事件调度。它比 TLM 细，但没有 sc_signal 那么“逐拍”地反映硬件时序，所以一般性能居中。
+为什么 sc_in/sc_out + sc_signal 通常最慢：sc_in/sc_out 本身只是端口，真正的传输靠 sc_signal，而 sc_signal 属于信号级建模，每次变化都要走事件和 delta cycle 机制。如果一个模块里有很多信号、很多进程、很多时钟沿，仿真器要处理的调度就会非常多，所以通常最慢。  
+
+
+
+
 ## 3 TLM Payload
 Payload（通用载荷） 是 TLM-2.0 中标准化的事务对象，用来在 Initiator 和 Target 之间传递读写请求 。  
 简单说：Payload = TLM 里的「快递单」，上面写满了这次「送货」的所有信息 。  
@@ -115,4 +131,54 @@ tlm_generic_payload 只包含最基本的字段：
 
 标准 Payload = 快递单上的「地址 + 商品 + 收件人」（必填）  
 Payload 扩展 = 快递单上的「备注栏」（可选，比如「冰箱里放冷冻」「不要放门口」）  
+
+## 5 TLM FIFO
+TLM FIFO 是一个先进先出（FIFO）的缓冲区，用于在 TLM 模块之间传递事务（Transaction），而不是直接点对点通信。它的主要作用是：  
+- 解耦发送者和接收者：producer 和 consumer 不需要同时工作，FIFO 中间缓冲  
+- 防止数据丢失：当 producer 比 consumer 快时，FIFO 可以暂存事务  
+- 提供标准接口：统一的 put() / get() 接口，方便连接  
+
+1. 创建 FIFO 通道
+```
+// FIFO 大小为 8，存储事务指针
+tlm::tlm_fifo<tlm::tlm_generic_payload*> fifo("fifo", 8);
+```
+
+2. Producer 向 FIFO 写入（put）
+```
+// FIFO 端口声明
+sc_port<tlm::tlm_fifo_put_if<tlm::tlm_generic_payload*>, 1> fifo_port;
+
+// 写入事务
+fifo_port->put(trans);  // FIFO 满时阻塞等待 [web:124]
+```
+
+3. Consumer 从 FIFO 读取（get）
+```
+// FIFO 端口声明
+sc_port<tlm::tlm_fifo_get_if<tlm::tlm_generic_payload*>, 1> fifo_port;
+
+// 读取事务
+if (fifo_port->nb_peek(trans)) {  // 非阻塞查看是否有数据
+    trans = fifo_port->get();      // 从 FIFO 取出事务
+    // 处理事务
+    delete trans;
+}
+```
+
+4. 连接
+```
+producer.fifo_port(fifo);  // Producer 的 put 端口连 FIFO
+consumer.fifo_port(fifo);  // Consumer 的 get 端口连 FIFO
+```
+
+典型应用场景:
+| 场景         | 说明                                    |
+| ---------- | ------------------------------------- |
+| CPU 与内存通信  | 读写请求队列，解耦 CPU 和内存模型 csdn              |
+| 多 Agent 通信 | 多个 Agent 之间通过 TLM FIFO 传递数据，协调测试 csdn |
+| AXI 总线建模   | 读写响应 FIFO，处理乱序事务 wenku.csdn           |
+
+TLM FIFO = 先进先出的事务缓冲区，Producer 用 put() 往里塞事务，Consumer 用 get() 往外取事务，中间自动缓冲，解耦发送和接收 。  
+
 
